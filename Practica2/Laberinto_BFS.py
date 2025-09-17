@@ -1,5 +1,6 @@
 import random
 from collections import deque
+from queue import PriorityQueue
 
 class Laberinto:
     def __init__(self, n, m):
@@ -52,7 +53,7 @@ def es_movimiento_valido(laberinto: Laberinto, posicion):
 def resolver_bfs(laberinto: Laberinto):
     inicio = laberinto.inicio
     final = laberinto.final
-    nodos_frontera = deque([inicio])
+    nodos_frontera = deque([inicio])    # Cambiar por Cola con prioridad para A*
     nodos_visitados= []
     padres = {inicio: None}
     i=0
@@ -61,6 +62,8 @@ def resolver_bfs(laberinto: Laberinto):
         i+=1
         if i>4000:
             return None
+        
+        # Calcular el valor F(n) = G(n) + H(n) para cada nodo en la frontera y ordenar la lista de nodo_frontera según f(n)
         
         nodo_actual = nodos_frontera.popleft()
 
@@ -72,6 +75,7 @@ def resolver_bfs(laberinto: Laberinto):
             return camino[::-1] 
          
         nodos_visitados.append(nodo_actual)
+        # Cambiar para que si el nodo_hijo no essta en nodos visitados y el coste es menor al de nodo en nodos_frontera sustituir
         # Movimiento arriba
         if es_movimiento_valido(laberinto, (nodo_actual[0] + 1, nodo_actual[1])) and (nodo_actual[0] + 1, nodo_actual[1]) not in nodos_visitados and (nodo_actual[0] + 1, nodo_actual[1]) not in nodos_frontera:
             nodos_frontera.append((nodo_actual[0] + 1, nodo_actual[1]))
@@ -88,6 +92,61 @@ def resolver_bfs(laberinto: Laberinto):
         if es_movimiento_valido(laberinto, (nodo_actual[0], nodo_actual[1] - 1)) and (nodo_actual[0], nodo_actual[1] - 1) not in nodos_visitados and (nodo_actual[0], nodo_actual[1] - 1) not in nodos_frontera:
             nodos_frontera.append((nodo_actual[0], nodo_actual[1] - 1))
             padres[(nodo_actual[0], nodo_actual[1] - 1)] = nodo_actual
+
+def resolver_a_estrella(laberinto: Laberinto):
+    inicio = laberinto.inicio
+    final = laberinto.final
+    
+    # Cola de prioridad: (f_cost, nodo)
+    frontera = PriorityQueue()
+    frontera.put((0, inicio))
+    
+    # Diccionarios para seguimiento
+    padres = {inicio: None}
+    g_cost = {inicio: 0}  # Coste real desde inicio
+    f_cost = {inicio: heuristica(inicio, final)}  # Coste estimado total
+    
+    while not frontera.empty():
+        _, nodo_actual = frontera.get()
+        
+        if nodo_actual == final:
+            # Reconstruir camino
+            camino = []
+            while nodo_actual:
+                camino.append(nodo_actual)
+                nodo_actual = padres[nodo_actual]
+            return camino[::-1]
+        
+        # Explorar vecinos
+        movimientos = [
+            (nodo_actual[0] + 1, nodo_actual[1]),  # Abajo
+            (nodo_actual[0] - 1, nodo_actual[1]),  # Arriba
+            (nodo_actual[0], nodo_actual[1] + 1),  # Derecha
+            (nodo_actual[0], nodo_actual[1] - 1)   # Izquierda
+        ]
+        
+        for movimiento in movimientos:
+            if not es_movimiento_valido(laberinto, movimiento):
+                continue
+                
+            # Coste temporal para llegar a este vecino
+            temp_g_cost = g_cost[nodo_actual] + 1
+            
+            # Si es un nuevo nodo o encontramos un camino mejor
+            if movimiento not in g_cost or temp_g_cost < g_cost[movimiento]:
+                # Actualizar costes y padre
+                g_cost[movimiento] = temp_g_cost
+                f_cost[movimiento] = temp_g_cost + heuristica(movimiento, final)
+                padres[movimiento] = nodo_actual
+                
+                # Agregar a la frontera
+                frontera.put((f_cost[movimiento], movimiento))
+    
+    return None  # No se encontró camino
+
+def heuristica(a, b):
+    # Distancia Manhattan (ideal para movimientos en grid 4-direcciones)
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 def mostrar_laberinto_con_camino(laberinto, camino):
     # Crear una copia del tablero
@@ -115,7 +174,7 @@ for fila in lab.tablero:
     j+=1
 
 print("Resolviendo laberinto...")
-camino = resolver_bfs(lab)
+camino = resolver_a_estrella(lab)
 
 if camino:
     print("Laberinto resuelto!")
