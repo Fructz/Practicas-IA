@@ -2,4 +2,5 @@
 Integrantes: 
 González Hernández Jeanette Verónica,
 Herrera Avila Luis Gerardo, 
-Ramírez Flores Rodrigo Iñaki. 6CV2
+Ramírez Flores Rodrigo Iñaki,
+Resendiz Rios Diego Emiliano. 6CV2
